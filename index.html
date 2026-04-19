@@ -7,8 +7,8 @@
 <style>
   body {
     font-family: Arial, sans-serif;
-    background-color: #fdf6f0; /* creamy white */
-    color: #5a0f0f; /* dark red */
+    background-color: #fdf6f0;
+    color: #5a0f0f;
     padding: 20px;
   }
 
@@ -75,7 +75,7 @@
 
 <div class="container">
   <h1>Revans Culculator Tool          </h1>
-<h3> Ψήφοι ανά δύναμη        - Έδρες</h3>
+<h3> Ψήφοι ανά δύναμη        ------ Έδρες</h3>
   <div id="list"></div>
 
   <div class="controls">
@@ -98,8 +98,9 @@
     div.className = "item";
 
     div.innerHTML = `
-      <input type="number" placeholder="Input">
-      <input class="result" type="text" placeholder="Result" disabled>
+      <input type="number" placeholder="Votes">
+      <input class="result" type="text" placeholder="Seats" disabled>
+      <input class="result" type="text" placeholder="Remainder" disabled>
     `;
 
     list.appendChild(div);
@@ -114,21 +115,65 @@
 
   function calculate() {
     const items = document.querySelectorAll(".item");
-    const extra = document.getElementById("extraInput").value;
+    const extra = Number(document.getElementById("extraInput").value);
 
+    let sum = 0;
+
+    // 1️⃣ Υπολογίζουμε το συνολικό άθροισμα ψήφων
     items.forEach(item => {
-      const input = item.children[0].value;
-      const resultBox = item.children[1];
+      sum += Number(item.children[0].value || 0);
+    });
 
-      // 🔧 PUT YOUR MATH HERE
-      // Example placeholder:
-      let result = Number(input) + Number(extra || 0);
+    // 2️⃣ Υπολογίζουμε το "μέτρο"
+    const metro = sum / extra;
 
-      resultBox.value = result;
+    let results = [];
+
+    // 3️⃣ Για κάθε item:
+    // - βρίσκουμε πόσες φορές χωράει το metro (ακέραιο μέρος)
+    // - βρίσκουμε το υπόλοιπο
+    items.forEach((item, index) => {
+      const votes = Number(item.children[0].value || 0);
+
+      const seats = Math.floor(votes / metro); // ακέραιες έδρες
+      const remainder = votes % metro;         // υπόλοιπο
+
+      results.push({
+        index: index,
+        seats: seats,
+        remainder: remainder
+      });
+    });
+
+    // 4️⃣ Υπολογίζουμε πόσες έδρες έχουν δοθεί ήδη
+    let givenSeats = results.reduce((sum, r) => sum + r.seats, 0);
+
+    // 5️⃣ Πόσες απομένουν
+    let remainingSeats = extra - givenSeats;
+
+    // 6️⃣ Ταξινομούμε κατά φθίνουσα σειρά υπολοίπου
+    results.sort((a, b) => b.remainder - a.remainder);
+
+    // 7️⃣ Δίνουμε τις υπόλοιπες έδρες στους μεγαλύτερους υπολοίπους
+    for (let i = 0; i < remainingSeats; i++) {
+      results[i].seats += 1;
+      results[i].remainder = 0; // μηδενίζουμε το υπόλοιπο όπως ζήτησες
+    }
+
+    // 8️⃣ Ξαναβάζουμε τα αποτελέσματα στη σωστή σειρά
+    results.sort((a, b) => a.index - b.index);
+
+    // 9️⃣ Εμφάνιση στα inputs
+    results.forEach((r, i) => {
+      const item = items[i];
+      item.children[1].value = r.seats;
+      item.children[2].value = r.remainder.toFixed(2);
     });
   }
 
-  // start with one item
+  // αρχικά items
+  addItem();
+  addItem();
   addItem();
 </script>
 
