@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
 <meta charset="UTF-8">
 <title>Revans Calculator</title>
-  
+
 <style>
   body {
     font-family: Arial, sans-serif;
     background-color: #fdf6f0;
     color: #5a0f0f;
-    padding: 20px;
+    padding: 15px;
+    margin: 0;
   }
 
-  h1 {
+  h1, h3 {
     text-align: center;
+    margin: 10px 0;
   }
 
   .container {
@@ -22,16 +24,27 @@
   }
 
   .item {
-    display: flex;
-    gap: 10px;
+    background: #fff;
+    padding: 10px;
+    border-radius: 10px;
     margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .row {
+    display: flex;
+    gap: 8px;
   }
 
   input {
-    padding: 8px;
+    padding: 10px;
     border: 1px solid #5a0f0f;
-    border-radius: 5px;
+    border-radius: 6px;
     width: 100%;
+    font-size: 16px;
   }
 
   .result {
@@ -43,30 +56,36 @@
     background-color: #7a1c1c;
     color: white;
     border: none;
-    padding: 10px;
-    border-radius: 6px;
+    padding: 12px;
+    border-radius: 8px;
     cursor: pointer;
+    font-size: 16px;
   }
 
-  button:hover {
+  button:active {
     background-color: #5a0f0f;
   }
 
   .controls {
     display: flex;
-    justify-content: space-between;
+    gap: 10px;
     margin: 15px 0;
   }
 
   .big-btn {
     width: 100%;
-    padding: 15px;
+    padding: 16px;
     font-size: 18px;
-    margin-top: 20px;
+    margin-top: 15px;
   }
 
-  .extra-box {
-    margin-top: 20px;
+  .stats {
+    background: #f3dede;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+    text-align: center;
+    font-weight: bold;
   }
 </style>
 </head>
@@ -74,107 +93,120 @@
 <body>
 
 <div class="container">
-  <h1>Revans Culculator Tool          </h1>
-<h3> Ψήφοι ανά δύναμη        ------ Έδρες</h3>
+  <h1>Revans Tool</h1>
+
   <div id="list"></div>
 
   <div class="controls">
-    <button onclick="addItem()">+ Add Item</button>
-    <button onclick="removeItem()">- Remove Item</button>
+    <button onclick="addItem()">+ Add</button>
+    <button onclick="removeItem()">- Remove</button>
   </div>
-<h3> Αριθμός εδρών του Συλλόγου</h3>
-  <div class="extra-box">
-    <input id="extraInput" type="number" placeholder="Extra number">
+
+  <h3>Αριθμός εδρών</h3>
+  <input id="extraInput" type="number" placeholder="Σύνολο εδρών">
+
+  <div class="stats">
+    Σύνολο ψήφων: <span id="sumDisplay">0</span><br>
+    Μέτρο: <span id="metroDisplay">0</span>
   </div>
 
   <button class="big-btn" onclick="calculate()">Calculate</button>
 </div>
 
 <script>
-  function addItem() {
-    const list = document.getElementById("list");
+function addItem() {
+  const list = document.getElementById("list");
 
-    const div = document.createElement("div");
-    div.className = "item";
+  const div = document.createElement("div");
+  div.className = "item";
 
-    div.innerHTML = `
-      <input type="number" placeholder="Votes">
-      <input class="result" type="text" placeholder="Seats" disabled>
-      <input class="result" type="text" placeholder="Remainder" disabled>
-    `;
+  div.innerHTML = `
+    <input type="number" placeholder="Ψήφοι">
+    <div class="row">
+      <input class="result" type="text" placeholder="Έδρες" disabled>
+      <input class="result" type="text" placeholder="Υπόλοιπο" disabled>
+    </div>
+    <input class="result" type="text" placeholder="%" disabled>
+  `;
 
-    list.appendChild(div);
+  list.appendChild(div);
+}
+
+function removeItem() {
+  const list = document.getElementById("list");
+  if (list.lastChild) list.removeChild(list.lastChild);
+}
+
+function calculate() {
+  const items = document.querySelectorAll(".item");
+  const extra = Number(document.getElementById("extraInput").value);
+
+  let sum = 0;
+
+  // 1️⃣ Υπολογισμός συνολικών ψήφων
+  items.forEach(item => {
+    sum += Number(item.children[0].value || 0);
+  });
+
+  // εμφάνιση sum
+  document.getElementById("sumDisplay").innerText = sum;
+
+  // 2️⃣ Υπολογισμός μέτρου
+  const metro = sum / extra;
+
+  // εμφάνιση metro
+  document.getElementById("metroDisplay").innerText = metro.toFixed(2);
+
+  let results = [];
+
+  // 3️⃣ Υπολογισμός αρχικών εδρών + υπολοίπων
+  items.forEach((item, index) => {
+    const votes = Number(item.children[0].value || 0);
+
+    const seats = Math.floor(votes / metro);
+    const remainder = votes % metro;
+    const percent = sum > 0 ? (votes / sum) * 100 : 0;
+
+    results.push({
+      index,
+      seats,
+      remainder,
+      percent
+    });
+  });
+
+  // 4️⃣ Πόσες έδρες έχουν ήδη δοθεί
+  let givenSeats = results.reduce((s, r) => s + r.seats, 0);
+
+  // 5️⃣ Πόσες μένουν
+  let remainingSeats = extra - givenSeats;
+
+  // 6️⃣ Ταξινόμηση κατά υπόλοιπο
+  results.sort((a, b) => b.remainder - a.remainder);
+
+  // 7️⃣ Δίνουμε extra έδρες
+  for (let i = 0; i < remainingSeats; i++) {
+    results[i].seats += 1;
+    results[i].remainder = 0;
   }
 
-  function removeItem() {
-    const list = document.getElementById("list");
-    if (list.lastChild) {
-      list.removeChild(list.lastChild);
-    }
-  }
+  // 8️⃣ Επαναφορά αρχικής σειράς
+  results.sort((a, b) => a.index - b.index);
 
-  function calculate() {
-    const items = document.querySelectorAll(".item");
-    const extra = Number(document.getElementById("extraInput").value);
+  // 9️⃣ Εμφάνιση
+  results.forEach((r, i) => {
+    const item = items[i];
 
-    let sum = 0;
+    item.children[1].children[0].value = r.seats;
+    item.children[1].children[1].value = r.remainder.toFixed(2);
+    item.children[2].value = r.percent.toFixed(1) + "%";
+  });
+}
 
-    // 1️⃣ Υπολογίζουμε το συνολικό άθροισμα ψήφων
-    items.forEach(item => {
-      sum += Number(item.children[0].value || 0);
-    });
-
-    // 2️⃣ Υπολογίζουμε το "μέτρο"
-    const metro = sum / extra;
-
-    let results = [];
-
-    // 3️⃣ Για κάθε item:
-    // - βρίσκουμε πόσες φορές χωράει το metro (ακέραιο μέρος)
-    // - βρίσκουμε το υπόλοιπο
-    items.forEach((item, index) => {
-      const votes = Number(item.children[0].value || 0);
-
-      const seats = Math.floor(votes / metro); // ακέραιες έδρες
-      const remainder = votes % metro;         // υπόλοιπο
-
-      results.push({
-        index: index,
-        seats: seats,
-        remainder: remainder
-      });
-    });
-
-    // 4️⃣ Υπολογίζουμε πόσες έδρες έχουν δοθεί ήδη
-    let givenSeats = results.reduce((sum, r) => sum + r.seats, 0);
-
-    // 5️⃣ Πόσες απομένουν
-    let remainingSeats = extra - givenSeats;
-
-    // 6️⃣ Ταξινομούμε κατά φθίνουσα σειρά υπολοίπου
-    results.sort((a, b) => b.remainder - a.remainder);
-
-    // 7️⃣ Δίνουμε τις υπόλοιπες έδρες στους μεγαλύτερους υπολοίπους
-    for (let i = 0; i < remainingSeats; i++) {
-      results[i].seats += 1;
-      results[i].remainder = 0; // μηδενίζουμε το υπόλοιπο όπως ζήτησες
-    }
-
-    // 8️⃣ Ξαναβάζουμε τα αποτελέσματα στη σωστή σειρά
-    results.sort((a, b) => a.index - b.index);
-
-    // 9️⃣ Εμφάνιση στα inputs
-    results.forEach((r, i) => {
-      const item = items[i];
-      item.children[1].value = r.seats;
-      item.children[2].value = r.remainder.toFixed(2);
-    });
-  }
-
-  // αρχικά items
-  addItem();
-  addItem();
-  addItem();
+// αρχικά items
+addItem();
+addItem();
+addItem();
 </script>
 
 </body>
